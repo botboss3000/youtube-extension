@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "YT Clean Feed",
+  "version": "0.1",
+  "description": "Hides creator posts and flags likely AI-generated videos on YouTube (mobile and desktop).",
+  "content_scripts": [{
+    "matches": ["*://m.youtube.com/*", "*://www.youtube.com/*"],
+    "js": ["content.js"],
+    "run_at": "document_idle"
+  }],
+  "browser_specific_settings": {
+    "gecko": { "id": "yt-clean-feed@ar.local" },
+    "gecko_android": {}
+  }
+}
