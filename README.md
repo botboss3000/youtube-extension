@@ -40,7 +40,7 @@ The free quota is 10,000 units a day (resets at midnight Pacific). Each video ch
 
 ### Privacy
 
-The video IDs in your feed are sent to Google's API along with your key. Nothing else leaves your device, and no account sign-in is involved.
+The video IDs in your feed are sent to Google's API along with your key. Nothing else leaves your device, and no account sign-in is involved. Because of this, Firefox lists "browsing activity" as data the extension shares when you install it. Requires Firefox 140+ on desktop or 142+ on Android.
 
 ## Try it on desktop Firefox
 
