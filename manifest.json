@@ -1,15 +1,29 @@
 {
   "manifest_version": 3,
   "name": "YT Clean Feed",
-  "version": "0.1",
+  "version": "0.2",
   "description": "Hides creator posts and flags likely AI-generated videos on YouTube (mobile and desktop).",
+  "permissions": ["storage"],
+  "host_permissions": ["*://m.youtube.com/*", "*://www.youtube.com/*"],
   "content_scripts": [{
     "matches": ["*://m.youtube.com/*", "*://www.youtube.com/*"],
-    "js": ["content.js"],
+    "js": ["defaults.js", "content.js"],
     "run_at": "document_idle"
   }],
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "action": {
+    "default_title": "YT Clean Feed settings",
+    "default_popup": "options.html"
+  },
   "browser_specific_settings": {
-    "gecko": { "id": "yt-clean-feed@ar.local" },
-    "gecko_android": {}
+    "gecko": {
+      "id": "yt-clean-feed@ar.local",
+      "strict_min_version": "128.0",
+      "data_collection_permissions": { "required": ["none"] }
+    },
+    "gecko_android": { "strict_min_version": "128.0" }
   }
 }

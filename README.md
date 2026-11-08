@@ -9,15 +9,16 @@ A Firefox extension (desktop and Android) that cleans up YouTube without replaci
 
 Shorts hiding is intentionally left out; use a dedicated extension for that.
 
-## Settings (for now)
+## Settings
 
-Edit the top of `content.js`:
+Open the settings page from the extension's toolbar button, or from **Add-ons → YT Clean Feed → Settings** (on Android: **⋮ menu → Extensions → YT Clean Feed**). Changes save automatically and apply to open YouTube tabs right away.
 
-- `MODE`: `"dim"` or `"hide"`
-- `BLOCKED_CHANNELS`: lowercase channel names to always flag
-- `AI_WORDS`: regex of telltale phrases
+- **Hide creator posts**: on/off
+- **Flagged videos**: dim with a badge showing the reason, or hide completely
+- **Blocked channels**: one name per line, always flagged
+- **AI keywords**: one phrase per line, case-insensitive; spaces also match hyphens
 
-A proper settings page is planned.
+Defaults live in `defaults.js`.
 
 ## Try it on desktop Firefox
 
@@ -35,10 +36,9 @@ To test without signing, use Firefox Nightly with a custom add-on collection, or
 
 ## Caveats
 
-YouTube renames its page elements often. If posts start showing up again, inspect one with Firefox remote debugging and update `POST_SELECTORS` in `content.js`.
+YouTube renames its page elements often. If posts start showing up again, inspect one with Firefox remote debugging and update `POST_SELECTORS` / `VIDEO_SELECTORS` in `content.js`.
 
 ## Roadmap
 
-- Settings page (dim/hide toggle, blocklist editor)
 - Detect YouTube's "altered or synthetic content" label
 - Scan comments for AI mentions via the YouTube Data API, with caching

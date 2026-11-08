@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>YT Clean Feed settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <main>
+    <header>
+      <h1>YT Clean Feed</h1>
+      <span id="status" role="status" aria-live="polite"></span>
+    </header>
+
+    <section>
+      <label class="row">
+        <span>
+          <strong>Hide creator posts</strong>
+          <small>Text and image posts from channels in your feed</small>
+        </span>
+        <input type="checkbox" id="hidePosts" class="switch">
+      </label>
+    </section>
+
+    <section>
+      <h2>Flagged videos</h2>
+      <div class="segmented" role="radiogroup" aria-label="What to do with flagged videos">
+        <label><input type="radio" name="mode" value="dim"><span>Dim with badge</span></label>
+        <label><input type="radio" name="mode" value="hide"><span>Hide completely</span></label>
+      </div>
+    </section>
+
+    <section>
+      <h2><label for="blockedChannels">Blocked channels</label></h2>
+      <small>One channel name per line. Their videos are always flagged.</small>
+      <textarea id="blockedChannels" rows="5" spellcheck="false" autocapitalize="off" placeholder="Some AI Channel"></textarea>
+    </section>
+
+    <section>
+      <h2><label for="aiKeywords">AI keywords</label></h2>
+      <small>One phrase per line, matched in titles and descriptions. Spaces also match hyphens, so "ai generated" catches "AI-generated".</small>
+      <textarea id="aiKeywords" rows="10" spellcheck="false" autocapitalize="off"></textarea>
+      <button type="button" id="resetKeywords" class="link">Restore default keywords</button>
+    </section>
+  </main>
+  <script src="defaults.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>
