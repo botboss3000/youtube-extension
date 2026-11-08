@@ -48,13 +48,22 @@ The video IDs in your feed are sent to Google's API along with your key. Nothing
 2. Click **Load Temporary Add-on** and pick `manifest.json`.
 3. Visit youtube.com (or m.youtube.com).
 
-## Install on Firefox for Android
+## Install (desktop or Android)
 
-1. Zip the files in this folder, with `manifest.json` at the root of the zip.
-2. Upload the zip to [addons.mozilla.org](https://addons.mozilla.org/developers/) as **unlisted**. Mozilla signs it, and it stays private.
-3. Open the signed `.xpi` link on your phone in Firefox and install it.
+Open the `.xpi` link from the [latest release](https://github.com/botboss3000/youtube-extension/releases/latest) in Firefox and accept the prompts. On Android, if tapping the link only downloads the file, enable **Settings → About Firefox → tap the logo 5 times**, then use **Settings → Install extension from file**.
 
-To test without signing, use Firefox Nightly with a custom add-on collection, or `web-ext run -t firefox-android` over USB.
+Installed copies update themselves: Firefox checks `updates.json` (linked from `update_url` in the manifest) about once a day.
+
+## Releasing a new version
+
+1. Bump `version` in `manifest.json` and commit to `main`.
+2. Push a matching tag, e.g. `git tag v0.6 && git push origin v0.6`.
+3. The **Sign and release** workflow lints, signs the extension with Mozilla (unlisted), attaches the signed `.xpi` to a GitHub release, and adds it to `updates.json`.
+
+The workflow needs two repository secrets, from [addons.mozilla.org API keys](https://addons.mozilla.org/developers/addon/api/key/):
+
+- `AMO_JWT_ISSUER`: the "JWT issuer"
+- `AMO_JWT_SECRET`: the "JWT secret"
 
 ## Caveats
 
