@@ -32,16 +32,40 @@
     </section>
 
     <section>
-      <h2><label for="blockedChannels">Blocked channels</label></h2>
-      <small>One channel name per line. Their videos are always flagged.</small>
-      <textarea id="blockedChannels" rows="5" spellcheck="false" autocapitalize="off" placeholder="Some AI Channel"></textarea>
+      <h2>AI comment scanner</h2>
+      <small>Reads each feed video's top 100 comments and flags it when enough of them call it AI. Uses one API unit per video; results are saved for a week.</small>
+
+      <div id="permBox" class="notice" hidden>
+        Firefox hasn't allowed this extension to reach YouTube and the YouTube API yet.
+        <button type="button" id="grantPerm" class="btn">Allow access</button>
+      </div>
+      <div id="errorBox" class="notice error" hidden></div>
+
+      <label for="apiKey" class="field-label">YouTube Data API key</label>
+      <div class="key-row">
+        <input type="password" id="apiKey" autocomplete="off" spellcheck="false" autocapitalize="off" placeholder="Paste your key">
+        <button type="button" id="toggleKey" class="btn ghost" aria-controls="apiKey">Show</button>
+      </div>
+      <small>Stored only on this device.</small>
+
+      <label for="minMatches" class="field-label">Flag when at least this many comments mention AI</label>
+      <input type="number" id="minMatches" min="1" max="50" inputmode="numeric">
+
+      <p id="usage" class="usage"></p>
+      <button type="button" id="clearCache" class="link">Clear saved results</button>
     </section>
 
     <section>
-      <h2><label for="aiKeywords">AI keywords</label></h2>
-      <small>One phrase per line, matched in titles and descriptions. Spaces also match hyphens, so "ai generated" catches "AI-generated".</small>
-      <textarea id="aiKeywords" rows="10" spellcheck="false" autocapitalize="off"></textarea>
-      <button type="button" id="resetKeywords" class="link">Restore default keywords</button>
+      <h2><label for="commentPhrases">AI phrases in comments</label></h2>
+      <small>One phrase per line, case-insensitive. Spaces also match hyphens. Changing this list clears saved results.</small>
+      <textarea id="commentPhrases" rows="10" spellcheck="false" autocapitalize="off"></textarea>
+      <button type="button" id="resetPhrases" class="link">Restore default phrases</button>
+    </section>
+
+    <section>
+      <h2><label for="blockedChannels">Blocked channels</label></h2>
+      <small>One channel name per line. Their videos are always flagged, no API needed.</small>
+      <textarea id="blockedChannels" rows="5" spellcheck="false" autocapitalize="off" placeholder="Some AI Channel"></textarea>
     </section>
   </main>
   <script src="defaults.js"></script>

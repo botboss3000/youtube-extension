@@ -1,4 +1,4 @@
-// YT Clean Feed: hides creator posts and flags likely AI videos.
+// YT Clean Feed: hides creator posts and flags videos whose comments call them AI.
 // Settings come from browser.storage (edited on the options page).
 
 const POST_SELECTORS = [
@@ -9,14 +9,14 @@ const POST_SELECTORS = [
 ];
 const VIDEO_SELECTORS = [
   "ytm-video-with-context-renderer",
+  "ytm-compact-video-renderer",
   "ytm-rich-item-renderer",
   "ytd-rich-item-renderer",
   "ytd-video-renderer",
   "ytd-compact-video-renderer"
-];
+].join(",");
 
 let settings = { ...YCF_DEFAULTS };
-let keywordRe = null;
 
 // Mode and post hiding are pure CSS keyed off <html> attributes,
 // so changing them in settings takes effect instantly.
@@ -36,42 +36,35 @@ style.textContent = `
 `;
 (document.head || document.documentElement).appendChild(style);
 
-function escapeRe(s) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-// "ai generated" also matches "AI-generated" and "ai  generated".
-function buildKeywordRe(words) {
-  const parts = words
-    .map(w => w.trim().toLowerCase())
-    .filter(Boolean)
-    .map(w => escapeRe(w).replace(/[\s-]+/g, "[\\s-]+"));
-  if (!parts.length) return null;
-  return new RegExp(`(?<![a-z0-9])(${parts.join("|")})(?![a-z0-9])`, "i");
-}
-
 function applySettings(s) {
   settings = { ...YCF_DEFAULTS, ...s };
-  keywordRe = buildKeywordRe(settings.aiKeywords);
   const root = document.documentElement;
   root.dataset.ycfPosts = settings.hidePosts ? "on" : "off";
   root.dataset.ycfMode = settings.mode;
 }
 
 function clearFlags() {
-  document.querySelectorAll("[data-ycf-flag]").forEach(el => {
-    delete el.dataset.ycfFlag;
-  });
+  document.querySelectorAll("[data-ycf-flag]").forEach(el => delete el.dataset.ycfFlag);
   document.querySelectorAll("[data-ycf-sig]").forEach(el => delete el.dataset.ycfSig);
 }
 
-function reasonFor(text) {
-  const t = text.toLowerCase();
-  const ch = settings.blockedChannels.find(c => c && t.includes(c.toLowerCase()));
-  if (ch) return "blocked channel";
-  const m = keywordRe && t.match(keywordRe);
-  if (m) return `AI keyword: "${m[1]}"`;
+function videoIdOf(el) {
+  for (const a of el.querySelectorAll("a[href]")) {
+    const href = a.getAttribute("href");
+    let m = href.match(/[?&]v=([\w-]{11})/) || href.match(/\/shorts\/([\w-]{11})/);
+    if (m) return m[1];
+  }
   return null;
+}
+
+function blockedChannel(text) {
+  const t = text.toLowerCase();
+  return settings.blockedChannels.some(c => c && t.includes(c.toLowerCase()));
+}
+
+function setFlag(el, reason) {
+  if (reason) el.dataset.ycfFlag = reason;
+  else delete el.dataset.ycfFlag;
 }
 
 function scan() {
@@ -80,18 +73,26 @@ function scan() {
     target.classList.add("ycf-post");
   });
 
-  document.querySelectorAll(VIDEO_SELECTORS.join(",")).forEach(el => {
+  document.querySelectorAll(VIDEO_SELECTORS).forEach(el => {
     // Skip nested matches (e.g. a video renderer inside a rich item).
-    if (el.parentElement && el.parentElement.closest(VIDEO_SELECTORS.join(","))) return;
+    if (el.parentElement && el.parentElement.closest(VIDEO_SELECTORS)) return;
+    const id = videoIdOf(el);
     const text = el.innerText || "";
-    // YouTube reuses elements while scrolling, so re-check when the text changes.
-    const sig = text.slice(0, 300);
+    // YouTube reuses elements while scrolling, so re-check when the content changes.
+    const sig = (id || "") + "|" + text.slice(0, 200);
     if (el.dataset.ycfSig === sig) return;
     el.dataset.ycfSig = sig;
+    setFlag(el, null);
 
-    const reason = reasonFor(text);
-    if (reason) el.dataset.ycfFlag = reason;
-    else delete el.dataset.ycfFlag;
+    if (blockedChannel(text)) { setFlag(el, "blocked channel"); return; }
+    if (!id || !settings.apiKey.trim()) return;
+
+    browser.runtime.sendMessage({ type: "check", videoId: id }).then(r => {
+      if (el.dataset.ycfSig !== sig || !r || r.skip) return; // element was recycled meanwhile
+      if (r.m >= settings.minMatches) {
+        setFlag(el, r.m === 1 ? "1 comment mentions AI" : `${r.m} comments mention AI`);
+      }
+    }).catch(() => {});
   });
 }
 
@@ -108,11 +109,15 @@ browser.storage.local.get(YCF_DEFAULTS).then(s => {
   new MutationObserver(scheduleScan).observe(document.body, { childList: true, subtree: true });
 });
 
+const RESCAN_KEYS = ["blockedChannels", "apiKey", "minMatches", "commentPhrases"];
 browser.storage.onChanged.addListener((changes, area) => {
   if (area !== "local") return;
   const next = { ...settings };
-  for (const k in changes) next[k] = changes[k].newValue;
-  const listsChanged = "blockedChannels" in changes || "aiKeywords" in changes;
+  let relevant = false;
+  for (const k in changes) {
+    if (k in YCF_DEFAULTS) { next[k] = changes[k].newValue; relevant = true; }
+  }
+  if (!relevant) return;
   applySettings(next);
-  if (listsChanged) { clearFlags(); scan(); }
+  if (RESCAN_KEYS.some(k => k in changes)) { clearFlags(); scan(); }
 });
