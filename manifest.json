@@ -1,10 +1,11 @@
 {
   "manifest_version": 3,
   "name": "YT Clean Feed",
-  "version": "0.3",
+  "version": "0.4",
   "description": "Hides creator posts and flags YouTube videos whose comments call them AI-generated (mobile and desktop).",
   "permissions": [
-    "storage"
+    "storage",
+    "clipboardWrite"
   ],
   "host_permissions": [
     "*://m.youtube.com/*",

@@ -2,8 +2,14 @@
 // counts how many mention AI, and caches the result per video.
 
 const API = "https://www.googleapis.com/youtube/v3/commentThreads";
-const CACHE_TTL = 7 * 24 * 3600 * 1000; // re-check a video after a week
-const CACHE_MAX = 5000;
+const DAY = 24 * 3600 * 1000;
+// Results with any AI mentions are kept forever. Clean results are capped so
+// storage stays small; the oldest clean ones are dropped first.
+const CLEAN_MAX = 50000;
+// A clean result based on only a few comments gets one more look later,
+// since AI call-outs often arrive after the first check.
+const FEW_COMMENTS = 20;
+const EARLY_RECHECK_DAYS = 3;
 const CONCURRENCY = 3;
 
 let cache = null;      // { videoId: { m: matches, n: comments, t: timestamp, off?: true } }
@@ -26,11 +32,28 @@ async function load() {
   usage = usage || s.usage;
 }
 
+let recheckDays = YCF_DEFAULTS.recheckDays;
+let minMatches = YCF_DEFAULTS.minMatches;
+browser.storage.local.get({ recheckDays, minMatches }).then(s => {
+  recheckDays = s.recheckDays;
+  minMatches = s.minMatches;
+});
+
+// Flagged results never expire. Clean ones are re-checked once early if they
+// were based on few comments, and after `recheckDays` if the user set one.
+function stale(entry) {
+  if (entry.off) return recheckDays > 0 && Date.now() - entry.t > recheckDays * DAY;
+  if (entry.m >= minMatches) return false;
+  const age = Date.now() - entry.t;
+  if (!entry.rc && entry.n < FEW_COMMENTS && age > EARLY_RECHECK_DAYS * DAY) return true;
+  return recheckDays > 0 && age > recheckDays * DAY;
+}
+
 function prune() {
-  const now = Date.now();
-  const fresh = Object.entries(cache).filter(([, v]) => now - v.t < CACHE_TTL);
-  fresh.sort((a, b) => b[1].t - a[1].t);
-  cache = Object.fromEntries(fresh.slice(0, CACHE_MAX));
+  const entries = Object.entries(cache);
+  const mentioned = entries.filter(([, v]) => v.m > 0);
+  const clean = entries.filter(([, v]) => !(v.m > 0)).sort((a, b) => b[1].t - a[1].t).slice(0, CLEAN_MAX);
+  cache = Object.fromEntries([...mentioned, ...clean]);
 }
 
 function persist() {
@@ -85,6 +108,7 @@ async function runCheck(videoId) {
   const entry = texts === null
     ? { m: 0, n: 0, off: true, t: Date.now() }
     : { m: re ? texts.filter(t => re.test(t)).length : 0, n: texts.length, t: Date.now() };
+  if (cache[videoId]) entry.rc = true; // this was a re-check
   cache[videoId] = entry;
   setError(null);
   persist();
@@ -104,7 +128,7 @@ function pump() {
 async function check(videoId) {
   await load();
   const hit = cache[videoId];
-  if (hit && Date.now() - hit.t < CACHE_TTL) return hit;
+  if (hit && !stale(hit)) return hit;
   const { apiKey } = await browser.storage.local.get({ apiKey: "" });
   if (!apiKey.trim()) return { skip: "nokey" };
   if (Date.now() < pausedUntil) return { skip: "paused" };
@@ -136,6 +160,8 @@ browser.storage.onChanged.addListener((changes, area) => {
   // Cached counts depend on the phrase list, so start over when it changes.
   if ("commentPhrases" in changes && cache) { cache = {}; persist(); }
   if ("apiKey" in changes) { pausedUntil = 0; setError(null); }
+  if ("recheckDays" in changes) recheckDays = changes.recheckDays.newValue || 0;
+  if ("minMatches" in changes) minMatches = changes.minMatches.newValue || YCF_DEFAULTS.minMatches;
 });
 
 browser.runtime.onInstalled.addListener(() => {

@@ -6,6 +6,7 @@ A Firefox extension (desktop and Android) that cleans up YouTube without replaci
 
 - **Hides creator posts** (community/backstage posts) from the feed.
 - **Flags videos whose comments call them AI.** For each video in your feed it reads the top 100 comments through the YouTube Data API and counts how many match phrases like "ai slop" or "ai voice". Once enough do (3 by default), the video is dimmed with a red badge, or hidden.
+- **Mark as AI**: a button on each video's page flags it on your device for good. It can also open the comment box and fill in your comment (default "AI slop."); you tap Post yourself.
 - **Blocked channels**: videos from channels you list are always flagged, with no API needed.
 
 Shorts hiding is intentionally left out; use a dedicated extension for that.
@@ -18,6 +19,8 @@ Open the settings page from the extension's toolbar button, or from **Add-ons â†
 - **Flagged videos**: dim with a badge showing the reason, or hide completely
 - **YouTube Data API key**: needed for the comment scanner (see below)
 - **Threshold**: how many top comments must mention AI before a video is flagged
+- **Re-check after N days**: blank (default) means a clean video is checked once; set a number to re-check clean results after that many days. Flagged videos are never re-checked, and clean videos with fewer than 20 comments get one automatic re-check after 3 days.
+- **Mark as AI**: whether to fill in a comment, the comment text, and an optional sign-off line
 - **AI phrases in comments**: one per line, case-insensitive; spaces also match hyphens
 - **Blocked channels**: one name per line
 
@@ -33,7 +36,7 @@ Defaults live in `defaults.js`.
 
 ### Quota
 
-The free quota is 10,000 units a day (resets at midnight Pacific). Each video check costs 1 unit, however many comments come back, and results are cached for a week, so normal browsing uses a small fraction. The settings page shows today's usage. If the quota runs out, checks pause and resume automatically.
+The free quota is 10,000 units a day (resets at midnight Pacific). Each video check costs 1 unit, however many comments come back, and each result is saved (by default for good), so normal browsing uses a small fraction. The settings page shows today's usage. If the quota runs out, checks pause and resume automatically.
 
 ### Privacy
 

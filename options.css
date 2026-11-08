@@ -126,3 +126,6 @@ input[type="number"] { width: 6em; }
 .notice .btn { display: block; margin-top: 8px; }
 .notice.error { border-color: var(--accent); color: var(--accent); }
 .usage { margin: 14px 0 0; color: var(--muted); font-size: 0.85rem; }
+
+.inline-row { display: flex; align-items: center; gap: 10px; }
+.inline-row span { margin-top: 6px; }

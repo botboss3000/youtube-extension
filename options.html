@@ -33,7 +33,7 @@
 
     <section>
       <h2>AI comment scanner</h2>
-      <small>Reads each feed video's top 100 comments and flags it when enough of them call it AI. Uses one API unit per video; results are saved for a week.</small>
+      <small>Reads each feed video's top 100 comments and flags it when enough of them call it AI. Uses one API unit per video, and saves the result so each video is checked once.</small>
 
       <div id="permBox" class="notice" hidden>
         Firefox hasn't allowed this extension to reach YouTube and the YouTube API yet.
@@ -51,8 +51,37 @@
       <label for="minMatches" class="field-label">Flag when at least this many comments mention AI</label>
       <input type="number" id="minMatches" min="1" max="50" inputmode="numeric">
 
+      <label for="recheckDays" class="field-label">Re-check a video's comments after</label>
+      <div class="inline-row">
+        <input type="number" id="recheckDays" min="0" max="3650" inputmode="numeric" placeholder="Never">
+        <span>days</span>
+      </div>
+      <small>Flagged videos stay flagged for good. Clean videos that had fewer than 20 comments get one automatic re-check after 3 days. Leave this blank to never re-check otherwise; set a number to re-check every clean video after that many days (1 API unit each).</small>
+
       <p id="usage" class="usage"></p>
       <button type="button" id="clearCache" class="link">Clear saved results</button>
+    </section>
+
+    <section>
+      <h2>Mark as AI</h2>
+      <small>On a video's page, tap <strong>Mark as AI</strong> to flag it on this device for good. Tap again to unmark. <span id="markedCount"></span></small>
+
+      <label class="row" style="margin-top:12px">
+        <span>
+          <strong>Also fill in a comment</strong>
+          <small>Opens the comment box and types your comment. You tap Post yourself.</small>
+        </span>
+        <input type="checkbox" id="markComment" class="switch">
+      </label>
+
+      <label for="commentText" class="field-label">Comment</label>
+      <input type="text" id="commentText" maxlength="500">
+
+      <label for="signOff" class="field-label">Sign-off line (optional)</label>
+      <input type="text" id="signOff" maxlength="200" placeholder="Flagged with YT Clean Feed">
+      <small>Added on a new line under the comment. Leave out links; YouTube tends to hide comments that contain them.</small>
+
+      <button type="button" id="clearMarks" class="link">Clear all my marks</button>
     </section>
 
     <section>

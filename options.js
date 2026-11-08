@@ -27,8 +27,19 @@ function render(s) {
   document.querySelector(`input[name="mode"][value="${s.mode}"]`).checked = true;
   $("apiKey").value = s.apiKey;
   $("minMatches").value = s.minMatches;
+  $("recheckDays").value = s.recheckDays > 0 ? s.recheckDays : "";
   $("commentPhrases").value = toLines(s.commentPhrases);
+  $("markComment").checked = s.markComment;
+  $("commentText").value = s.commentText;
+  $("signOff").value = s.signOff;
+  renderMarked(s.marked);
   $("blockedChannels").value = toLines(s.blockedChannels);
+}
+
+function renderMarked(marked) {
+  const n = Object.keys(marked || {}).length;
+  $("markedCount").textContent = n ? `You've marked ${n.toLocaleString()} video${n === 1 ? "" : "s"}.` : "";
+  $("clearMarks").hidden = !n;
 }
 
 function renderError(e) {
@@ -59,7 +70,9 @@ refreshPerms();
 setInterval(refreshUsage, 5000);
 
 browser.storage.onChanged.addListener((changes, area) => {
-  if (area === "local" && "lastError" in changes) renderError(changes.lastError.newValue);
+  if (area !== "local") return;
+  if ("lastError" in changes) renderError(changes.lastError.newValue);
+  if ("marked" in changes) renderMarked(changes.marked.newValue);
 });
 
 $("hidePosts").addEventListener("change", e => save({ hidePosts: e.target.checked }));
@@ -84,6 +97,13 @@ $("minMatches").addEventListener("change", e => {
   save({ minMatches: n });
 });
 
+$("recheckDays").addEventListener("change", e => {
+  const v = parseInt(e.target.value, 10);
+  const n = Number.isNaN(v) || v <= 0 ? 0 : Math.min(3650, v);
+  e.target.value = n > 0 ? n : "";
+  save({ recheckDays: n });
+});
+
 for (const key of ["commentPhrases", "blockedChannels"]) {
   const el = $(key);
   let last = null;
@@ -98,6 +118,19 @@ for (const key of ["commentPhrases", "blockedChannels"]) {
   el.addEventListener("input", debounce(saveList, 800));
   el.addEventListener("blur", saveList);
 }
+
+$("markComment").addEventListener("change", e => save({ markComment: e.target.checked }));
+for (const key of ["commentText", "signOff"]) {
+  const el = $(key);
+  const saveText = () => save({ [key]: el.value.trim() });
+  el.addEventListener("input", debounce(saveText, 800));
+  el.addEventListener("blur", saveText);
+}
+
+$("clearMarks").addEventListener("click", async () => {
+  if (!confirm("Remove all videos you marked as AI?")) return;
+  await save({ marked: {} });
+});
 
 $("resetPhrases").addEventListener("click", () => {
   $("commentPhrases").value = toLines(YCF_DEFAULTS.commentPhrases);

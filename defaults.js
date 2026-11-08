@@ -5,6 +5,11 @@ const YCF_DEFAULTS = {
   blockedChannels: [],
   apiKey: "",
   minMatches: 3, // flag when at least this many top comments mention AI
+  recheckDays: 0, // re-check a clean video's comments after this many days; 0 = never
+  marked: {}, // { videoId: timestamp } videos you marked as AI yourself; never expire
+  markComment: true, // fill in a comment when marking a video
+  commentText: "AI slop.",
+  signOff: "", // optional extra line added under the comment
   commentPhrases: [
     "ai slop",
     "ai generated",
