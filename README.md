@@ -56,9 +56,7 @@ Installed copies update themselves: Firefox checks `updates.json` (linked from `
 
 ## Releasing a new version
 
-1. Bump `version` in `manifest.json` and commit to `main`.
-2. Push a matching tag, e.g. `git tag v0.6 && git push origin v0.6`.
-3. The **Sign and release** workflow lints, signs the extension with Mozilla (unlisted), attaches the signed `.xpi` to a GitHub release, and adds it to `updates.json`.
+Bump `version` in `manifest.json` and push to `main`. The **Sign and release** workflow lints, signs the extension with Mozilla (unlisted), attaches the signed `.xpi` to a GitHub release tagged with the version, and adds it to `updates.json`. Pushes that don't change the version do nothing. It can also be run by hand from the Actions tab.
 
 The workflow needs two repository secrets, from [addons.mozilla.org API keys](https://addons.mozilla.org/developers/addon/api/key/):
 

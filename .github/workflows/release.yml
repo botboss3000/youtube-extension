@@ -1,6 +1,7 @@
 # Signs the extension with Mozilla (unlisted), publishes the signed .xpi as a
 # GitHub release, and points updates.json at it so installed copies update
-# themselves. Triggered by pushing a tag like v0.6 that matches manifest.json.
+# themselves. Runs when manifest.json changes on main; if that version has
+# already been released it does nothing, so bumping "version" is the trigger.
 #
 # Needs two repo secrets (Settings > Secrets and variables > Actions):
 #   AMO_JWT_ISSUER  - "JWT issuer" from addons.mozilla.org/developers/addon/api/key/
@@ -9,7 +10,9 @@ name: Sign and release
 
 on:
   push:
-    tags: ["v*"]
+    branches: [main]
+    paths: [manifest.json, .github/workflows/release.yml]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -26,19 +29,24 @@ jobs:
         with:
           node-version: 20
 
-      - name: Check tag matches manifest version
+      - name: Read version; skip if already released
         id: meta
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           VERSION=$(jq -r .version manifest.json)
           ADDON_ID=$(jq -r .browser_specific_settings.gecko.id manifest.json)
-          if [ "v$VERSION" != "$GITHUB_REF_NAME" ]; then
-            echo "::error::Tag $GITHUB_REF_NAME does not match manifest version $VERSION"
-            exit 1
-          fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "addon_id=$ADDON_ID" >> "$GITHUB_OUTPUT"
+          if gh release view "v$VERSION" --json assets --jq '.assets[].name' 2>/dev/null | grep -q '\.xpi$'; then
+            echo "v$VERSION is already released; nothing to do."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Check signing secrets are set
+        if: steps.meta.outputs.skip != 'true'
         env:
           AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
           AMO_JWT_SECRET: ${{ secrets.AMO_JWT_SECRET }}
@@ -49,9 +57,11 @@ jobs:
           fi
 
       - name: Lint
+        if: steps.meta.outputs.skip != 'true'
         run: npx --yes web-ext@8 lint --self-hosted --ignore-files README.md updates.json
 
       - name: Sign with Mozilla (unlisted)
+        if: steps.meta.outputs.skip != 'true'
         env:
           WEB_EXT_API_KEY: ${{ secrets.AMO_JWT_ISSUER }}
           WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
@@ -65,6 +75,7 @@ jobs:
           --approval-timeout 1800000
 
       - name: Collect signed file
+        if: steps.meta.outputs.skip != 'true'
         id: xpi
         run: |
           SIGNED=$(ls dist/*.xpi | head -n 1)
@@ -75,20 +86,22 @@ jobs:
           echo "sha256=$(sha256sum "$FILE" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
 
       - name: Publish GitHub release
+        if: steps.meta.outputs.skip != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.ref_name }}
+          TAG: v${{ steps.meta.outputs.version }}
           FILE: ${{ steps.xpi.outputs.file }}
         run: |
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" "$FILE" --clobber
           else
-            gh release create "$TAG" "$FILE" --verify-tag \
+            gh release create "$TAG" "$FILE" --target "$GITHUB_SHA" \
               --title "YT Clean Feed ${TAG#v}" \
               --notes "Signed by Mozilla. To install in Firefox (desktop or Android), open the .xpi link below. Installed copies update automatically."
           fi
 
       - name: Point updates.json at this release
+        if: steps.meta.outputs.skip != 'true'
         env:
           VERSION: ${{ steps.meta.outputs.version }}
           ADDON_ID: ${{ steps.meta.outputs.addon_id }}
@@ -97,7 +110,7 @@ jobs:
         run: |
           URL="https://github.com/$GITHUB_REPOSITORY/releases/download/v$VERSION/$FILE"
           git fetch origin main
-          git checkout -B main origin/main
+          git checkout -B main FETCH_HEAD
           jq --arg id "$ADDON_ID" --arg v "$VERSION" --arg u "$URL" --arg h "sha256:$SHA256" \
             '.addons[$id].updates = ([.addons[$id].updates[]? | select(.version != $v)] + [{version: $v, update_link: $u, update_hash: $h}])' \
             updates.json > updates.tmp && mv updates.tmp updates.json
