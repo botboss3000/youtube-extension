@@ -1,7 +1,13 @@
 {
   "addons": {
     "yt-clean-feed@ar.local": {
-      "updates": []
+      "updates": [
+        {
+          "version": "0.5",
+          "update_link": "https://github.com/botboss3000/youtube-extension/releases/download/v0.5/yt_clean_feed-0.5.xpi",
+          "update_hash": "sha256:34ec1b31d107d9a6c5fec50189f2ecb43bda8eb15d7aca0db25b3c2709b0b97f"
+        }
+      ]
     }
   }
 }
